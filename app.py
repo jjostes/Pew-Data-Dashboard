@@ -1,3 +1,18 @@
+from jupyter_dash import JupyterDash
+import dash_core_components as dcc
+import dash_bootstrap_components as dbc
+import dash_html_components as html
+from dash.dependencies import Input, Output, State
+import plotly.express as px
+import plotly.graph_objects as go
+
+import pandas as pd
+import numpy as np
+import pyreadstat
+import re
+
+
+
 # load data
 fpath = 'data/ATP W42.sav'
 
@@ -45,7 +60,8 @@ policy_dropdown = [{'label': v, 'value': k} for k,v in label_dict.items() if k i
 demo_dropdown = [{'label': v, 'value': k} for k,v in label_dict.items() if k in demographics]
 
 
-# creating labels to be used with dropdown menu
+
+# creating a dictionary of labels for each theme category. To be used with dcc.Dropdown
 theme_categories = ['Social impact of scientific developments',
                     'Policy decisions on scientific issues',
                     'Confidence in public figures',
@@ -62,17 +78,18 @@ theme_labels = [society, policy, confidence, rq_form1, pw_form2, scm4, scm5, q, 
 theme_select_dropdown = dict(zip(theme_categories, theme_labels))
 
 
+
 """
 Dash app
 
 """
 
-app = dash.Dash(__name__, assets_ignore='.*bootstrap-journal.css.*')
+app = JupyterDash(__name__, assets_ignore='.*bootstrap-journal.css.*')
 
 layout = html.Div([
     dbc.Container([
             dbc.NavbarSimple(
-                brand="Science and Society",
+                brand="Science and Society [In Development]",
                 brand_href="#",
                 color="primary",
                 dark=True,
@@ -234,4 +251,4 @@ def update_graph(x_axis, y_axis):
 
 
 if __name__ == '__main__':
-        app.run_server(debug=True)
+    app.run_server(debug=True)
