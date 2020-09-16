@@ -1,4 +1,4 @@
-from jupyter_dash import JupyterDash
+import Dash
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
 import dash_html_components as html
@@ -84,7 +84,7 @@ Dash app
 
 """
 
-app = JupyterDash(__name__, assets_ignore='.*bootstrap-journal.css.*')
+app = dash.Dash(__name__, assets_ignore='.*bootstrap-journal.css.*')
 
 layout = html.Div([
     dbc.Container([
