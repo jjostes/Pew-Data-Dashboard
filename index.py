@@ -103,7 +103,7 @@ app.layout = html.Div([
                 in the United States. Part of their American Trends Panel, the survey measured respondent
                 attitudes regarding a number of topics, from trust in researchers and the scientific process
                 to whether or not scientists should be involved with guiding public policy decisions.
-                This dashboard's purpose is to provide the user with the ability to examine theses trends for .themselves.
+                This dashboard's purpose is to provide the user with the ability to examine theses trends for themselves.
                 """)
             ],
                 style={'background-color':'rgba(229, 237, 250, 0.5', 'padding': '5px'}
