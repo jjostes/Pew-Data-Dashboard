@@ -1,7 +1,8 @@
-import dash
+from app import app
+from app import server
+import dash_html_components as html
 import dash_core_components as dcc
 import dash_bootstrap_components as dbc
-import dash_html_components as html
 from dash.dependencies import Input, Output, State
 import plotly.express as px
 import plotly.graph_objects as go
@@ -83,9 +84,7 @@ Dash app
 
 """
 
-app = dash.Dash(__name__, assets_ignore='.*bootstrap-journal.css.*')
-
-layout = html.Div([
+app.layout = html.Div([
     dbc.Container([
             dbc.NavbarSimple(
                 brand="Science and Society [In Development]",
@@ -193,8 +192,6 @@ style={'background-color:': 'rgba(197, 220, 235, 0.9)',
 )
 
 
-app.layout = layout
-
 
 @app.callback(
     Output('yaxis-column', 'options'),
@@ -251,25 +248,3 @@ def update_graph(x_axis, y_axis):
 
 if __name__ == '__main__':
     app.run_server(debug=True)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
