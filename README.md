@@ -1,4 +1,4 @@
-# Pew-Data-Deep-Dive
+# Pew-Data-Dashboard
 In development: In 2019, the Pew Research Center conducted a survey of 4,464 adults living in households in the United States. Part of their American Trends Panel, the survey measured respondent attitudes regarding a number of topics, from trust in researchers and the scientific process to whether or not scientists should be involved with guiding public policy decisions. This dashboard's purpose is to provide the user with the ability to examine theses trends for themselves. 
 
 ### Details
