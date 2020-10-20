@@ -104,12 +104,7 @@ pract_dropdown = dict(zip(practitioners_cat, pract_names))
 --------------------------------------
 DASH APP: LAYOUT, TABS, CALLBACKS
 --------------------------------------
-"""
 
-app = JupyterDash(__name__, assets_ignore='.*bootstrap-journal.css.*')
-
-
-""" 
 ------
 LAYOUT
 ------
