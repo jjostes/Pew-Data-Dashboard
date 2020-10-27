@@ -28,16 +28,7 @@ DATA CLEANING, TRANSFORMATION
 -----------------------------
 """
 
-# regular expression that matches with every character up until the first whitespace character.
-pattern = re.compile(r'.+?\.\s?')
-
-label_dict = {}
-
-for key, value in meta.column_names_to_labels.items():
-    label_dict[key] = re.sub(pattern=pattern, string=value, repl=' ')
-
-    
-# helper function used to sort survey items according to thematic subject matter code (e.g. starts with 'RQ')
+# helper function used to sort survey items according to their thematic subject matter code (e.g. starts with 'RQ')
 def list_helper(theme_code):
     return [i for i in df.columns if theme_code in i]
 
@@ -56,12 +47,63 @@ demographics = list_helper('F_')
 weight = ['WEIGHT_W42']
 
 
+
+# The dictionary meta.column_names_to_labels repeats the key at the start of the value string.
+# e.g. key = 'PAST_W42'; value = 'PAST_W42. Compared with twenty years ago...'
+# This for loop removes the substring 'PAST_W42' from the beginning of the value string. 
+
+for key, value in meta.column_names_to_labels.items():
+    meta.column_names_to_labels[key] = re.sub(pattern='.+\.\s?', string=value, repl='')
+
+    
+# within the same dictionary, the following string (saved as a regex pattern) repeats for each CONF item.
+# this for loop removes 'pattern' in order to make for easier reading later on
+
+pattern = '^How much confidence, if any, do you have in each of the following to act in the best interests of the public\?\s'
+
+for key, value in meta.column_names_to_labels.items():
+    if key in confidence:
+        meta.column_names_to_labels[key] = re.sub(pattern=pattern, string=value, repl='')
+        
+        
+        
+# For certain columns, ordinal values didn't follow a spectrum of good to bad; agree to disagree
+# Here we collect these columns, and use a for loop to switch 'Worse' from 2.0 to 3.0
+# The values now read {1.0: 'Better', 3.0: 'Worse', 2.0: 'About the same', 99.0: 'Refused'}
+
+rq_pq = rq_form1 + pq_form2
+
+ordinals_to_switch = [i for i in rq_pq if re.search("^(P|R)Q(1)", i)]
+ordinals_to_switch = ordinals_to_switch + society + q + ['POLICY3_W42']
+
+for col_name in ordinals_to_switch:
+    df[col_name] = df[col_name].map(lambda x: 2.0 if x == 3.0 else (3.0 if x == 2.0 else x))
+    
+    
+    
+# To directly edit the dictionary values of meta.variable_values_labels, it was copied as variable 'meta_vvl' to make more readable
+# The dict object is still stored at the same memory location as the variable, so values _2, _3 are used to switch 2.0 to 3.0 and vice versa. Otherwise the elif statement wouldn't change due key 2.0 equalling key 3.0
+
+meta_vvl = meta.variable_value_labels.copy()
+
+for col_name in ordinals_to_switch:
+    
+    value_2 = meta_vvl[col_name][2.0]
+    value_3 = meta_vvl[col_name][3.0]
+
+    for k, v in meta_vvl[col_name].items():
+        
+        if k == 2.0:
+            meta_vvl[col_name][2.0] = value_3
+            
+        elif k == 3.0:
+            meta_vvl[col_name][3.0] = value_2
+            
 # dictionary of column names to be used with the dcc.Dropdown() property 'options'
-demo_dropdown = [{'label': v, 'value': k} for k,v in label_dict.items() if k in demographics]
+demo_dropdown = [{'label': v, 'value': k} for k,v in meta.column_names_to_labels.items() if k in demographics]
 
 
-
-# labels that are then zipped with column names, to be used as a dictionary for dcc.Dropdown
+# labels to be used with the theme selection dropdown, similar to demo. 
 theme_categories = ['Social impact of scientific developments',
                     'Policy decisions on scientific issues',
                     'Confidence in public figures',
@@ -75,7 +117,7 @@ theme_names = [society, policy, confidence, scm4, scm5, q, pop, knowledge]
 theme_select_dropdown = dict(zip(theme_categories, theme_names))
 
 
-# same as above
+# labels to be used with the researcher selection dropdown
 researchers_cat = ['Medical Research Scientists', 
                    'Environmental Research Scientists', 
                    'Nutrition Research Scientists']
@@ -87,7 +129,8 @@ nutr_scientists = [i for i in rq_form1 if re.search("(_F1C)", i)]
 research_names = [med_scientists, env_scientists, nutr_scientists]
 res_dropdown = dict(zip(researchers_cat, research_names))
 
-#same as above
+
+# labels to be used with the practitioner selection dropdown
 practitioners_cat = ['Medical Doctors', 
                      'Environmental Health Specialists', 
                      'Dietician']
@@ -98,6 +141,36 @@ dieticians = [i for i in pq_form2 if re.search("(_F2C)", i)]
 
 pract_names = [md, env_specialists, dieticians]
 pract_dropdown = dict(zip(practitioners_cat, pract_names))
+
+
+# Rather than repeat the following code for the callbacks of tab1/tab2/tab3, it is saved as the following function
+def make_freq_distr(x,y):
+    new_df = pd.crosstab(df_copy[x],
+                     df_copy[y],
+                     df_copy.WEIGHT_W42, aggfunc = sum, dropna=True,
+                     normalize='index'). \
+                     loc[meta.variable_value_labels[x].values()]. \
+                     loc[:, meta.variable_value_labels[y].values()]*100
+
+    fig = px.bar(new_df, x=new_df.columns, y=new_df.index, color_discrete_sequence=['#636efa', '#00cc96', '#ef553b', '#ab63fa'])
+
+    fig.update_layout(
+        font={'size':15},
+        margin=dict(l=20, r=20, t=20, b=20),
+        xaxis_title="Frequency (%)",
+        yaxis_title=None,
+
+        legend=dict(
+            font=dict(size=16),
+            title=None,
+            yanchor="top",
+            y=1.5,
+            xanchor="left",
+            x=0.01)
+    )
+    
+    return fig
+
 
 
 """ 
@@ -115,7 +188,7 @@ app.layout = html.Div([
         
 # Navbar
         dbc.NavbarSimple(
-            brand="Science and Society [In Development]",
+            brand="Science and Society",
             brand_href="#",
             color="primary",
             dark=True,
@@ -232,7 +305,8 @@ tab1_content = html.Div([
             dbc.Row([
                  dbc.Col([
                     dcc.RadioItems(id='yaxis-column1',
-                                  value = 'PAST_W42')
+                                  value = 'PAST_W42',
+                                  inputStyle={'display-internal':'table-row'})
                 ]),
             ]),
 
@@ -291,7 +365,8 @@ tab2_content = html.Div([
             dbc.Row([
                  dbc.Col([
                     dcc.RadioItems(id='yaxis-column2',
-                                  value = 'RQ1_F1A_W42')
+                                  value = 'RQ1_F1A_W42',
+                                  inputStyle={'display-inside':'flow'})
                 ]),
             ]),
 
@@ -350,7 +425,8 @@ tab3_content = html.Div([
             dbc.Row([
                  dbc.Col([
                     dcc.RadioItems(id='yaxis-column3',
-                                  value = 'PQ1_F2A_W42')
+                                  value = 'PQ1_F2A_W42',
+                                  inputStyle={'display-inside':'flow'})
                 ]),
             ]),
 
@@ -400,7 +476,7 @@ TAB 1 CALLBACKS
 )
 def set_theme_options(selected_theme):
         temp = [i for i in theme_select_dropdown[selected_theme]]
-        temp_list = [{'label': label_dict[i], 'value': i} for i in temp]
+        temp_list = [{'label': meta.column_names_to_labels[i], 'value': i} for i in temp]
         
         return temp_list
 
@@ -411,39 +487,7 @@ def set_theme_options(selected_theme):
      Input('yaxis-column1', 'value')]
 )
 def update_graph(x_axis, y_axis):
-        new_df = pd.crosstab(df_copy[x_axis],
-                             df_copy[y_axis],
-                             df_copy.WEIGHT_W42, aggfunc = sum, dropna=True,
-                             normalize='index'). \
-                             loc[meta.variable_value_labels[x_axis].values()]. \
-                             loc[:, meta.variable_value_labels[y_axis].values()]*100
-
-        fig = px.bar(new_df, x=new_df.columns, y=new_df.index)
-
-        fig.update_layout(
-            font={'size':15},
-            margin=dict(l=20, r=20, t=20, b=20),
-            xaxis_title="Frequency (%)",
-            yaxis_title=None,
-            
-            legend=dict(
-                font=dict(size=16),
-                title=None,
-                yanchor="top",
-                y=1.5,
-                xanchor="left",
-                x=0.01)
-        ),
-        
-        fig.update_layout(
-            hoverlabel = dict(
-                bgcolor="white", 
-                font_size=14, 
-                font_family="sans-serif"
-            )
-        )
-
-        return fig
+    return make_freq_distr(x_axis, y_axis)
     
 """ 
 ---------------
@@ -456,7 +500,7 @@ TAB 2 CALLBACKS
 )
 def set_theme_options(selected_theme):
         temp = [i for i in res_dropdown[selected_theme]]
-        temp_list = [{'label': label_dict[i], 'value': i} for i in temp]
+        temp_list = [{'label': meta.column_names_to_labels[i], 'value': i} for i in temp]
         
         return temp_list
 
@@ -467,39 +511,7 @@ def set_theme_options(selected_theme):
      Input('yaxis-column2', 'value')]
 )
 def update_graph(x_axis, y_axis):
-        new_df = pd.crosstab(df_copy[x_axis],
-                             df_copy[y_axis],
-                             df_copy.WEIGHT_W42, aggfunc = sum, dropna=True,
-                             normalize='index'). \
-                             loc[meta.variable_value_labels[x_axis].values()]. \
-                             loc[:, meta.variable_value_labels[y_axis].values()]*100
-
-        fig = px.bar(new_df, x=new_df.columns, y=new_df.index)
-
-        fig.update_layout(
-            font={'size':15},
-            margin=dict(l=20, r=20, t=20, b=20),
-            xaxis_title="Frequency (%)",
-            yaxis_title=None,
-            
-            legend=dict(
-                font=dict(size=16),
-                title=None,
-                yanchor="top",
-                y=1.5,
-                xanchor="left",
-                x=0.01)
-        ),
-        
-        fig.update_layout(
-            hoverlabel = dict(
-                bgcolor="white", 
-                font_size=14, 
-                font_family="sans-serif"
-            )
-        )
-
-        return fig
+    return make_freq_distr(x_axis, y_axis)
 
 """ 
 ---------------
@@ -512,7 +524,7 @@ TAB 3 CALLBACKS
 )
 def set_theme_options(selected_theme):
         temp = [i for i in pract_dropdown[selected_theme]]
-        temp_list = [{'label': label_dict[i], 'value': i} for i in temp]
+        temp_list = [{'label': meta.column_names_to_labels[i], 'value': i} for i in temp]
         
         return temp_list
 
@@ -523,39 +535,8 @@ def set_theme_options(selected_theme):
      Input('yaxis-column3', 'value')]
 )
 def update_graph(x_axis, y_axis):
-        new_df = pd.crosstab(df_copy[x_axis],
-                             df_copy[y_axis],
-                             df_copy.WEIGHT_W42, aggfunc = sum, dropna=True,
-                             normalize='index'). \
-                             loc[meta.variable_value_labels[x_axis].values()]. \
-                             loc[:, meta.variable_value_labels[y_axis].values()]*100
+    return make_freq_distr(x_axis, y_axis)
 
-        fig = px.bar(new_df, x=new_df.columns, y=new_df.index)
-
-        fig.update_layout(
-            font={'size':15},
-            margin=dict(l=20, r=20, t=20, b=20),
-            xaxis_title="Frequency (%)",
-            yaxis_title=None,
-            
-            legend=dict(
-                font=dict(size=16),
-                title=None,
-                yanchor="top",
-                y=1.5,
-                xanchor="left",
-                x=0.01)
-        ),
-        
-        fig.update_layout(
-            hoverlabel = dict(
-                bgcolor="white", 
-                font_size=14, 
-                font_family="sans-serif"
-            )
-        )
-
-        return fig
 
 
 
