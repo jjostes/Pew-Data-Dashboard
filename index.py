@@ -9,6 +9,7 @@ import plotly.graph_objects as go
 
 import pandas as pd
 import numpy as np
+from scipy import stats
 import pyreadstat
 import re
 
@@ -142,8 +143,13 @@ dieticians = [i for i in pq_form2 if re.search("(_F2C)", i)]
 pract_names = [md, env_specialists, dieticians]
 pract_dropdown = dict(zip(practitioners_cat, pract_names))
 
+'''
+---------
+FUNCTIONS
+---------
+'''
+# Rather than repeat the following code for the callbacks of tab1/tab2/tab3, they're saved as the following functions
 
-# Rather than repeat the following code for the callbacks of tab1/tab2/tab3, it is saved as the following function
 def make_freq_distr(x,y):
     new_df = pd.crosstab(df_copy[x],
                      df_copy[y],
@@ -151,8 +157,15 @@ def make_freq_distr(x,y):
                      normalize='index'). \
                      loc[meta.variable_value_labels[x].values()]. \
                      loc[:, meta.variable_value_labels[y].values()]*100
+    
+    new_df = new_df.applymap(lambda x: round(x, 2))
 
-    fig = px.bar(new_df, x=new_df.columns, y=new_df.index, color_discrete_sequence=['#636efa', '#00cc96', '#ef553b', '#ab63fa'])
+    fig = px.bar(data_frame=new_df,
+                 x=new_df.columns,
+                 y=new_df.index,
+                 color_discrete_sequence=['#636efa', '#00cc96', '#ef553b', '#ab63fa'])
+#                  hover_name=new_df.index,
+#                  hover_data=(new_df.columns)*100),
 
     fig.update_layout(
         font={'size':15},
@@ -170,6 +183,63 @@ def make_freq_distr(x,y):
     )
     
     return fig
+
+
+def unweighted_table(x,y):
+    temp_groupby = df_copy.groupby([x, y]).WEIGHT_W42.count().reset_index()
+    
+    temp_pivot = temp_groupby.pivot(index=x, columns=y, values='WEIGHT_W42')\
+                    .loc[meta.variable_value_labels[x].values()]\
+                    .loc[:, meta.variable_value_labels[y].values()]
+    
+    temp_values = np.rot90(temp_pivot.values, k=3)
+    temp_values = np.fliplr(temp_values)
+    temp_values = np.vstack([temp_pivot.index, temp_values])
+
+    fig = go.Figure(data=[go.Table(
+        header=dict(values=['Index'] + list(temp_pivot.columns)),
+        cells=dict(values=temp_values))
+                         ])
+
+    return fig
+    
+    
+
+def weighted_table(x,y):
+    temp_groupby = df_copy.groupby([x, y]).WEIGHT_W42.sum().reset_index()
+    
+    temp_groupby.WEIGHT_W42 = temp_groupby.WEIGHT_W42.map(lambda x: round(x, 0))
+    
+    temp_pivot = temp_groupby.pivot(index=x, columns=y, values='WEIGHT_W42')\
+                    .loc[meta.variable_value_labels[x].values()]\
+                    .loc[:, meta.variable_value_labels[y].values()]
+    
+    temp_values = np.rot90(temp_pivot.values, k=3)
+    temp_values = np.fliplr(temp_values)
+    temp_values = np.vstack([temp_pivot.index, temp_values])
+
+    fig = go.Figure(data=[go.Table(
+        header=dict(values=['Index'] + list(temp_pivot.columns)),
+        cells=dict(values=temp_values))
+                         ])
+
+    return fig
+
+def chi_squared(x,y):
+    stats_df = pd.crosstab(index=df[x],
+                       columns=df[y],
+                       values=df.WEIGHT_W42,
+                       aggfunc='sum',
+                       dropna=True)
+    
+    stats_df = stats_df.drop(99.0, axis=0)
+    stats_df = stats_df.drop(99.0, axis=1)
+    
+    observed_freq = stats_df.to_numpy()
+    
+    chi2, p, dof, expected = stats.chi2_contingency(observed_freq)
+    
+    return 'chi-squared: {} || p-value: {} || degrees of freedom: {}'.format(chi2, p, dof)
 
 
 
@@ -320,6 +390,19 @@ tab1_content = html.Div([
                               config={'displayModeBar': False}
                     )
                 ])
+            ]),
+            
+            html.Br(),
+            dbc.Row([
+                html.P(id='chi-squared1')
+            ]),
+            html.H5('unweighted data'),
+            dbc.Row([
+                dcc.Graph(id='unweighted-table1')
+            ]),
+            html.H5('weighted data'),
+            dbc.Row([
+                dcc.Graph(id='weighted-table1')
             ])
         ])
 ])
@@ -488,6 +571,32 @@ def set_theme_options(selected_theme):
 )
 def update_graph(x_axis, y_axis):
     return make_freq_distr(x_axis, y_axis)
+
+@app.callback(
+    Output('unweighted-table1', 'figure'),
+    [Input('xaxis-column1', 'value'),
+     Input('yaxis-column1', 'value')]
+)
+def update_uw_table(x, y):
+    return unweighted_table(x, y)
+
+
+@app.callback(
+    Output('weighted-table1', 'figure'),
+    [Input('xaxis-column1', 'value'),
+     Input('yaxis-column1', 'value')]
+)
+def update_uw_table(x, y):
+    return weighted_table(x, y)
+
+
+@app.callback(
+    Output('chi-squared1', 'children'),
+    [Input('xaxis-column1', 'value'),
+     Input('yaxis-column1', 'value')]
+)
+def update_chi_squared(x, y):
+    return chi_squared(x, y)
     
 """ 
 ---------------
