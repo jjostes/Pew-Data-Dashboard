@@ -6,13 +6,12 @@ from dash.dependencies import Input, Output
 from app import app
 from app import server
 
-from apps import home, explore, participants, data
+from apps import home, explore, data
 
 navbar = dbc.NavbarSimple(
     children=[
         dbc.NavItem(dbc.NavLink('Home', href='/home')),
         dbc.NavItem(dbc.NavLink('Explore', href='/explore')),
-        dbc.NavItem(dbc.NavLink('Participants', href='/participants')),
         dbc.NavItem(dbc.NavLink('Data', href='/data'))
     ],
     brand='Science and Society',
@@ -37,8 +36,6 @@ def navigation(pathname):
         return home.layout
     elif pathname == '/explore':
         return explore.layout
-    elif pathname == '/participants':
-        return participants.layout
     elif pathname == '/data':
         return data.layout
     else:

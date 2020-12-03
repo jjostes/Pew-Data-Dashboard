@@ -112,7 +112,7 @@ theme_categories = ['Social impact of scientific developments',
                     'Importance of scientific issues',
                     'Opinions on research scientists',
                     'Questions regarding scientific research',
-                    'Solving the countires problems',
+                    'Solving the countries problems',
                     'General scientific knowledge']
 
 theme_names = [society, policy, confidence, scm4, scm5, q, pop, knowledge]
@@ -292,16 +292,12 @@ layout = dbc.Container([
     html.Br(),
     
     html.Div([
-        dbc.Col(
-            [html.Em(children=['A note on the data'], style={'font-family':'sans-serif'}),
-             html.P('''
-                 Weighted values are used to better represent the distribution of sociodemographic characteristics in 
-                 the U.S. population. If not taken into account, the following tables and charts could over- or underrepresent 
-                 a given demographic's response.
-                 ''')
-            ],
-            lg=12
-        )
+        html.Em(children=['A note on the data'], style={'font-family':'sans-serif'}),
+        html.P('''
+            Weighted values are used to better represent the distribution of sociodemographic characteristics in 
+            the U.S. population. If not taken into account, the following tables and charts could over- or underrepresent 
+            a given demographic's response.
+            ''')
     ]),
     
     html.Br()
@@ -374,14 +370,12 @@ tab1_content = html.Div([
         dbc.Row([
             html.P(id='chi-squared1')
         ]),
+
         html.H5('unweighted data'),
-        dbc.Row([
-            dcc.Graph(id='unweighted-table1')
-        ]),
+        dcc.Graph(id='unweighted-table1'),
+
         html.H5('weighted data'),
-        dbc.Row([
-            dcc.Graph(id='weighted-table1')
-        ])
+        dcc.Graph(id='weighted-table1')
     ])
 ])
 
