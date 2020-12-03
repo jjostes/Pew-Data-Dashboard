@@ -14,6 +14,8 @@ layout = dbc.Container([
         )
     ),
     
+    html.Hr(),
+    
     html.H4('Releases from this survey'),
     html.Ul([
         html.Li(
@@ -62,7 +64,16 @@ layout = dbc.Container([
             dcc.Link('What Americans know about science',
                      href='https://tinyurl.com/y33n2bof',
                      target='_blank')
+        ),
+
+        html.Hr(),
+        
+        html.Li(
+            dcc.Link('Github Repository',
+                     href='https://github.com/jjostes/Pew-Data-Dashboard',
+                     target='_blank')
         )
+        
     ])
 
 ])
